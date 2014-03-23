@@ -51,4 +51,17 @@
 #define WEBSERVER_CONF_CFS_CONNS 2
 #endif
 
+#define NETSTACK_CONF_NETWORK sicslowpan_driver
+#define NETSTACK_CONF_MAC     csma_driver
+#define NETSTACK_CONF_RDC     cxmac_driver
+//#define NETSTACK_CONF_RDC     nullrdc_driver
+#define NETSTACK_CONF_RADIO   contiki_maca_driver
+#define NETSTACK_CONF_FRAMER  framer_802154
+
+#define NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE      8
+
+#define COLLECT_CONF_ANNOUNCEMENTS       1
+#define RIME_CONF_NO_POLITE_ANNOUCEMENTS 0
+
+
 #endif /* PROJECT_ROUTER_CONF_H_ */

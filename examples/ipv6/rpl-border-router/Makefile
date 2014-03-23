@@ -6,6 +6,10 @@ CONTIKI=../../..
 UIP_CONF_IPV6=1
 CFLAGS+= -DUIP_CONF_IPV6_RPL
 
+MODULES+=core/net/ip core/net core/net/rpl \
+        core/net/ipv6 core/net/mac \
+        core/net/mac/cxmac
+
 #linker optimizations
 SMALL=1
 

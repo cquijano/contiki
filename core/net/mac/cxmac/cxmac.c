@@ -226,7 +226,7 @@ on(void)
   if(cxmac_is_on && radio_is_on == 0) {
     radio_is_on = 1;
     NETSTACK_RADIO.on();
-    LEDS_ON(LEDS_RED);
+//     LEDS_ON(LEDS_RED);
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -237,7 +237,7 @@ off(void)
      is_streaming == 0) {
     radio_is_on = 0;
     NETSTACK_RADIO.off();
-    LEDS_OFF(LEDS_RED);
+//     LEDS_OFF(LEDS_RED);
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -543,7 +543,7 @@ send_packet(void)
   t0 = RTIMER_NOW();
   strobes = 0;
 
-  LEDS_ON(LEDS_BLUE);
+//   LEDS_ON(LEDS_BLUE);
 
   /* Send a train of strobes until the receiver answers with an ACK. */
 
@@ -551,7 +551,7 @@ send_packet(void)
   on();
   collisions = 0;
   if(!is_already_streaming) {
-    watchdog_stop();
+//     watchdog_stop();
     got_strobe_ack = 0;
     t = RTIMER_NOW();
     for(strobes = 0, collisions = 0;
@@ -651,7 +651,7 @@ send_packet(void)
     register_encounter(packetbuf_addr(PACKETBUF_ADDR_RECEIVER), encounter_time);
   }
 #endif /* WITH_ENCOUNTER_OPTIMIZATION */
-  watchdog_start();
+  //watchdog_start();
 
   PRINTF("cxmac: send (strobes=%u,len=%u,%s), done\n", strobes,
 	 packetbuf_totlen(), got_strobe_ack ? "ack" : "no ack");
@@ -673,7 +673,7 @@ send_packet(void)
 
   we_are_sending = 0;
 
-  LEDS_OFF(LEDS_BLUE);
+  //LEDS_OFF(LEDS_BLUE);
   if(collisions == 0) {
     if(!is_broadcast && !got_strobe_ack) {
       return MAC_TX_NOACK;
