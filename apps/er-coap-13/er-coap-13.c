@@ -118,11 +118,11 @@ size_t
 coap_set_option_header(unsigned int delta, size_t length, uint8_t *buffer)
 {
   size_t written = 0;
-
+  unsigned int *x;
   buffer[0] = coap_option_nibble(delta)<<4 | coap_option_nibble(length);
 
   /* avoids code duplication without function overhead */
-  unsigned int *x = &delta;
+  x = &delta;
   do
   {
     if (*x>268)
@@ -418,6 +418,11 @@ coap_send_message(uip_ipaddr_t *addr, uint16_t port, uint8_t *data, uint16_t len
 coap_status_t
 coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
 {
+  uint8_t *current_option;
+  unsigned int option_number = 0;
+  unsigned int option_delta = 0;
+  size_t option_length = 0;
+  unsigned int *x;
   coap_packet_t *const coap_pkt = (coap_packet_t *) packet;
 
   /* Initialize packet */
@@ -439,7 +444,7 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
     return BAD_REQUEST_4_00;
   }
 
-  uint8_t *current_option = data + COAP_HEADER_LEN;
+  current_option = data + COAP_HEADER_LEN;
 
   memcpy(coap_pkt->token, current_option, coap_pkt->token_len);
   PRINTF("Token (len %u) [0x%02X%02X%02X%02X%02X%02X%02X%02X]\n", coap_pkt->token_len,
@@ -458,9 +463,6 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
   memset(coap_pkt->options, 0, sizeof(coap_pkt->options));
   current_option += coap_pkt->token_len;
 
-  unsigned int option_number = 0;
-  unsigned int option_delta = 0;
-  size_t option_length = 0;
 
   while (current_option < data+data_len)
   {
@@ -487,7 +489,7 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
     ++current_option;
 
     /* avoids code duplication without function overhead */
-    unsigned int *x = &option_delta;
+    x = &option_delta;
     do
     {
       if (*x==13)

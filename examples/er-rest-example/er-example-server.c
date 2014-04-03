@@ -321,14 +321,14 @@ void
 chunks_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
   int32_t strpos = 0;
-
+  const char *error_msg;
   /* Check the offset for boundaries of the resource data. */
   if (*offset>=CHUNKS_TOTAL)
   {
     REST.set_response_status(response, REST.status.BAD_OPTION);
     /* A block error message should not exceed the minimum block size (16). */
 
-    const char *error_msg = "BlockOutOfScope";
+    error_msg = "BlockOutOfScope";
     REST.set_response_payload(response, error_msg, strlen(error_msg));
     return;
   }
@@ -336,7 +336,7 @@ chunks_handler(void* request, void* response, uint8_t *buffer, uint16_t preferre
   /* Generate data until reaching CHUNKS_TOTAL. */
   while (strpos<preferred_size)
   {
-    strpos += snprintf((char *)buffer+strpos, preferred_size-strpos+1, "|%ld|", *offset);
+    strpos += sprintf((char *)buffer+strpos, "|%ld|", *offset);
   }
 
   /* snprintf() does not adjust return value if truncated by size. */
@@ -475,10 +475,11 @@ PERIODIC_RESOURCE(pushing, METHOD_GET, "test/push", "title=\"Periodic demo\";obs
 void
 pushing_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
+  const char *msg;
   REST.set_header_content_type(response, REST.type.TEXT_PLAIN);
 
   /* Usually, a CoAP server would response with the resource representation matching the periodic_handler. */
-  const char *msg = "It's periodic!";
+  msg = "It's periodic!";
   REST.set_response_payload(response, msg, strlen(msg));
 
   /* A post_handler that handles subscriptions will be called for periodic resources by the REST framework. */
@@ -493,15 +494,14 @@ pushing_periodic_handler(resource_t *r)
 {
   static uint16_t obs_counter = 0;
   static char content[11];
-
+  coap_packet_t notification[1]; /* This way the packet can be treated as pointer as usual. */
   ++obs_counter;
 
   PRINTF("TICK %u for /%s\n", obs_counter, r->url);
 
   /* Build notification. */
-  coap_packet_t notification[1]; /* This way the packet can be treated as pointer as usual. */
   coap_init_message(notification, COAP_TYPE_NON, REST.status.OK, 0 );
-  coap_set_payload(notification, content, snprintf(content, sizeof(content), "TICK %u", obs_counter));
+  coap_set_payload(notification, content, sprintf(content, "TICK %u", obs_counter));
 
   /* Notify the registered observers with the given message type, observe option, and payload. */
   REST.notify_subscribers(r, obs_counter, notification);
@@ -561,19 +561,21 @@ RESOURCE(sub, METHOD_GET | HAS_SUB_RESOURCES, "test/path", "title=\"Sub-resource
 void
 sub_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
+  const char *uri_path = NULL;
+  int len;
+  int base_len;
   REST.set_header_content_type(response, REST.type.TEXT_PLAIN);
 
-  const char *uri_path = NULL;
-  int len = REST.get_url(request, &uri_path);
-  int base_len = strlen(resource_sub.url);
+  len = REST.get_url(request, &uri_path);
+  base_len = strlen(resource_sub.url);
 
   if (len==base_len)
   {
-	snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, "Request any sub-resource of /%s", resource_sub.url);
+	sprintf((char *)buffer, "Request any sub-resource of /%s", resource_sub.url);
   }
   else
   {
-    snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, ".%.*s", len-base_len, uri_path+base_len);
+    sprintf((char *)buffer, ".%.*s", len-base_len, uri_path+base_len);
   }
 
   REST.set_response_payload(response, buffer, strlen((char *)buffer));
