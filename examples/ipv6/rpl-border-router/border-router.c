@@ -373,7 +373,7 @@ PROCESS_THREAD(border_router_process, ev, data)
    * Since we are the DAG root, reception delays would constrain mesh throughbut.
    */
   NETSTACK_MAC.off(1);
-  
+
 #if DEBUG || 1
   print_local_addresses();
 #endif
