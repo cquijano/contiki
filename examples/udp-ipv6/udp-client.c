@@ -34,12 +34,14 @@
 
 #include <string.h>
 #include <stdbool.h>
-
+#define SEND_TOO_LARGE_PACKET_TO_TEST_FRAGMENTATION	0
+#define UIP_CONF_ROUTER					1
+#define RESOLV_CONF_SUPPORTS_MDNS			0
 #define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
 
-#define SEND_INTERVAL		15 * CLOCK_SECOND
-#define MAX_PAYLOAD_LEN		40
+#define SEND_INTERVAL		1 * CLOCK_SECOND
+#define MAX_PAYLOAD_LEN		100
 
 static struct uip_udp_conn *client_conn;
 /*---------------------------------------------------------------------------*/
@@ -58,7 +60,7 @@ tcpip_handler(void)
   }
 }
 /*---------------------------------------------------------------------------*/
-static char buf[MAX_PAYLOAD_LEN];
+static char buf[MAX_PAYLOAD_LEN]="Hello from the client size bigger 92 error ";
 static void
 timeout_handler(void)
 {
@@ -66,8 +68,8 @@ timeout_handler(void)
 
   printf("Client sending to: ");
   PRINT6ADDR(&client_conn->ripaddr);
-  sprintf(buf, "Hello %d from the client", ++seq_id);
-  printf(" (msg: %s)\n", buf);
+  sprintf(buf,"%s%d",buf,++seq_id%10);
+  printf(" (msg: %s) len %d\n", buf,strlen(buf));
 #if SEND_TOO_LARGE_PACKET_TO_TEST_FRAGMENTATION
   uip_udp_packet_send(client_conn, buf, UIP_APPDATA_SIZE);
 #else /* SEND_TOO_LARGE_PACKET_TO_TEST_FRAGMENTATION */
@@ -111,7 +113,7 @@ set_connection_address(uip_ipaddr_t *ipaddr)
 #if RESOLV_CONF_SUPPORTS_MDNS
 #define UDP_CONNECTION_ADDR       contiki-udp-server.local
 #elif UIP_CONF_ROUTER
-#define UDP_CONNECTION_ADDR       aaaa:0:0:0:0212:7404:0004:0404
+#define UDP_CONNECTION_ADDR       aaaa:0:0:0:0:0:0:1
 #else
 #define UDP_CONNECTION_ADDR       fe80:0:0:0:6466:6666:6666:6666
 #endif
