@@ -205,8 +205,8 @@ get_global_addr(uip_ipaddr_t *addr)
 static uint32_t
 get32(uint8_t *buffer, int pos)
 {
-  return (uint32_t)buffer[pos] << 24 | (uint32_t)buffer[pos + 1] << 16 |
-         (uint32_t)buffer[pos + 2] << 8 | buffer[pos + 3];
+  return ((uint32_t)buffer[pos] << 24 | (uint32_t)buffer[pos + 1] << 16 |
+          (uint32_t)buffer[pos + 2] << 8 | buffer[pos + 3]);
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -1162,9 +1162,15 @@ dao_input_storing(int sec_len, uint8_t mic_len, void *sec_section)
   uint8_t flags;
   uint8_t subopt_type;
   /*
+<<<<<<< HEAD
      uint8_t pathcontrol;
      uint8_t pathsequence;
    */
+=======
+    uint8_t pathcontrol;
+    uint8_t pathsequence;
+  */
+>>>>>>> alvaro/coap-duplicate-messages
   uip_ipaddr_t prefix;
   uip_ds6_route_t *rep;
   uint8_t buffer_length;
@@ -1182,6 +1188,7 @@ dao_input_storing(int sec_len, uint8_t mic_len, void *sec_section)
 
   prefixlen = 0;
   parent = NULL;
+  memset(&prefix, 0, sizeof(prefix));
 
   uip_ipaddr_copy(&dao_sender_addr, &UIP_IP_BUF->srcipaddr);
 
@@ -1218,7 +1225,11 @@ dao_input_storing(int sec_len, uint8_t mic_len, void *sec_section)
 
   /* Destination Advertisement Object */
   PRINTF("RPL: Received a (%s) DAO with sequence number %u from ",
+<<<<<<< HEAD
          learned_from == RPL_ROUTE_FROM_UNICAST_DAO ? "unicast" : "multicast", sequence);
+=======
+         learned_from == RPL_ROUTE_FROM_UNICAST_DAO? "unicast": "multicast", sequence);
+>>>>>>> alvaro/coap-duplicate-messages
   PRINT6ADDR(&dao_sender_addr);
   PRINTF("\n");
 
@@ -1262,6 +1273,7 @@ dao_input_storing(int sec_len, uint8_t mic_len, void *sec_section)
     }
 
     switch(subopt_type) {
+<<<<<<< HEAD
     case RPL_OPTION_TARGET:
       /* Handle the target option. */
       prefixlen = buffer[pos + 3];
@@ -1275,6 +1287,21 @@ dao_input_storing(int sec_len, uint8_t mic_len, void *sec_section)
       lifetime = buffer[pos + 5];
       /* The parent address is also ignored. */
       break;
+=======
+      case RPL_OPTION_TARGET:
+        /* Handle the target option. */
+        prefixlen = buffer[i + 3];
+        memset(&prefix, 0, sizeof(prefix));
+        memcpy(&prefix, buffer + i + 4, (prefixlen + 7) / CHAR_BIT);
+        break;
+      case RPL_OPTION_TRANSIT:
+        /* The path sequence and control are ignored. */
+        /*      pathcontrol = buffer[i + 3];
+                pathsequence = buffer[i + 4];*/
+        lifetime = buffer[i + 5];
+        /* The parent address is also ignored. */
+        break;
+>>>>>>> alvaro/coap-duplicate-messages
     }
   }
 
@@ -1285,6 +1312,11 @@ dao_input_storing(int sec_len, uint8_t mic_len, void *sec_section)
 
 #if RPL_WITH_MULTICAST
   if(uip_is_addr_mcast_global(&prefix)) {
+    /*
+     * "rep" is used for a unicast route which we don't need now; so set NULL so
+     * that operations on "rep" will be skipped.
+     */
+    rep = NULL;
     mcast_group = uip_mcast6_route_add(&prefix);
     if(mcast_group) {
       mcast_group->dag = dag;
@@ -1317,7 +1349,12 @@ dao_input_storing(int sec_len, uint8_t mic_len, void *sec_section)
         uint8_t out_seq;
         out_seq = prepare_for_dao_fwd(sequence, rep);
 
+<<<<<<< HEAD
         PRINTF("RPL: Forwarding No-path DAO to parent ");
+=======
+        PRINTF("RPL: Forwarding No-path DAO to parent - out_seq:%d",
+               out_seq);
+>>>>>>> alvaro/coap-duplicate-messages
         PRINT6ADDR(rpl_get_parent_ipaddr(dag->preferred_parent));
         PRINTF("\n");
 
@@ -1394,6 +1431,7 @@ fwd_dao:
     int should_ack = 0;
 
     if(flags & RPL_DAO_K_FLAG) {
+<<<<<<< HEAD
       /*
        * check if this route is already installed and we can ack now!
        * not pending - and same seq-no means that we can ack.
@@ -1404,19 +1442,35 @@ fwd_dao:
           rep->state.dao_seqno_in == sequence) ||
          dag->rank == ROOT_RANK(instance)) {
         should_ack = 1;
+=======
+      if(rep != NULL) {
+        /*
+         * check if this route is already installed and we can ack now!
+         * not pending - and same seq-no means that we can ack.
+         * (e.g. the route is installed already so it will not take any
+         * more room that it already takes - so should be ok!)
+         */
+        if((!RPL_ROUTE_IS_DAO_PENDING(rep) &&
+            rep->state.dao_seqno_in == sequence) ||
+           dag->rank == ROOT_RANK(instance)) {
+          should_ack = 1;
+        }
+>>>>>>> alvaro/coap-duplicate-messages
       }
     }
 
     if(dag->preferred_parent != NULL &&
        rpl_get_parent_ipaddr(dag->preferred_parent) != NULL) {
       uint8_t out_seq = 0;
-      /* if this is pending and we get the same seq no it is a retrans */
-      if(RPL_ROUTE_IS_DAO_PENDING(rep) &&
-         rep->state.dao_seqno_in == sequence) {
-        /* keep the same seq-no as before for parent also */
-        out_seq = rep->state.dao_seqno_out;
-      } else {
-        out_seq = prepare_for_dao_fwd(sequence, rep);
+      if(rep != NULL) {
+        /* if this is pending and we get the same seq no it is a retrans */
+        if(RPL_ROUTE_IS_DAO_PENDING(rep) &&
+           rep->state.dao_seqno_in == sequence) {
+          /* keep the same seq-no as before for parent also */
+          out_seq = rep->state.dao_seqno_out;
+        } else {
+          out_seq = prepare_for_dao_fwd(sequence, rep);
+        }
       }
 
       PRINTF("RPL: Forwarding DAO to parent ");
@@ -1523,6 +1577,7 @@ dao_input_nonstoring(int sec_len, uint8_t mic_len, uint32_t incoming_counter)
     }
 
     switch(subopt_type) {
+<<<<<<< HEAD
     case RPL_OPTION_TARGET:
       /* Handle the target option. */
       prefixlen = buffer[pos + 3];
@@ -1538,6 +1593,23 @@ dao_input_nonstoring(int sec_len, uint8_t mic_len, uint32_t incoming_counter)
         memcpy(&dao_parent_addr, buffer + pos + 6, 16);
       }
       break;
+=======
+      case RPL_OPTION_TARGET:
+        /* Handle the target option. */
+        prefixlen = buffer[i + 3];
+        memset(&prefix, 0, sizeof(prefix));
+        memcpy(&prefix, buffer + i + 4, (prefixlen + 7) / CHAR_BIT);
+        break;
+      case RPL_OPTION_TRANSIT:
+        /* The path sequence and control are ignored. */
+        /*      pathcontrol = buffer[i + 3];
+                pathsequence = buffer[i + 4];*/
+        lifetime = buffer[i + 5];
+        if(len >= 20) {
+          memcpy(&dao_parent_addr, buffer + i + 6, 16);
+        }
+        break;
+>>>>>>> alvaro/coap-duplicate-messages
     }
   }
 
@@ -1894,30 +1966,30 @@ dao_output_target_seq(rpl_parent_t *parent, uip_ipaddr_t *prefix,
   }
 
   if(parent == NULL) {
-    PRINTF("RPL dao_output_target error parent NULL\n");
+    PRINTF("RPL: dao_output_target error parent NULL\n");
     return;
   }
 
   parent_ipaddr = rpl_get_parent_ipaddr(parent);
   if(parent_ipaddr == NULL) {
-    PRINTF("RPL dao_output_target error parent IP address NULL\n");
+    PRINTF("RPL: dao_output_target error parent IP address NULL\n");
     return;
   }
 
   dag = parent->dag;
   if(dag == NULL) {
-    PRINTF("RPL dao_output_target error dag NULL\n");
+    PRINTF("RPL: dao_output_target error dag NULL\n");
     return;
   }
 
   instance = dag->instance;
 
   if(instance == NULL) {
-    PRINTF("RPL dao_output_target error instance NULL\n");
+    PRINTF("RPL: dao_output_target error instance NULL\n");
     return;
   }
   if(prefix == NULL) {
-    PRINTF("RPL dao_output_target error prefix NULL\n");
+    PRINTF("RPL: dao_output_target error prefix NULL\n");
     return;
   }
 #ifdef RPL_DEBUG_DAO_OUTPUT
