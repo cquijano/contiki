@@ -7,6 +7,13 @@
 
 #include <string.h>
 
+#ifdef COAP_DTLS_CONF_CALLBACK
+#include "ercoap-dtls-custom.h"
+extern dtls_handler_t coap_dtls_custom_callback;
+#endif
+
+#include "er-coap-dtls.h"
+
 #define DEBUG DEBUG_NONE
 #include "dtls_debug.h"
 
