@@ -25,7 +25,7 @@
 #ifdef COAP_DTLS_CONF_CALLBACK
 #define COAP_DTLS_CALLBACK COAP_DTLS_CONF_CALLBACK
 #else /* COAP_DTLS_CONF_CALLBACK */
-#define COAP_DTLS_CALLBACK coap_dtls_callback
+#define COAP_DTLS_CALLBACK coap_dtls_custom_get_psk_info
 #endif /* COAP_DTLS_CALLBACK */
 
 /* Send 'data' to peer defined by session */
@@ -43,5 +43,6 @@ int coap_dtls_get_psk_info(struct dtls_context_t *ctx,
                            const unsigned char *id, size_t id_len,
                            unsigned char *result, size_t result_length);
 #endif
-
+#endif
 #endif /* COAP_DTLS_H_ */
+
