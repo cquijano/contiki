@@ -55,6 +55,7 @@ typedef coap_packet_t rest_request_t;
 typedef coap_packet_t rest_response_t;
 
 void coap_init_engine(void);
+int coap_receive();
 
 /*---------------------------------------------------------------------------*/
 /*- Client Part -------------------------------------------------------------*/

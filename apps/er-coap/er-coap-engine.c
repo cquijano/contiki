@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "er-coap-engine.h"
+#include "er-coap-communication.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -81,7 +82,6 @@ LIST(messages_list);
 /*---------------------------------------------------------------------------*/
 /*- Internal API ------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-
 #if COAP_CHECK_DUPLICATES
 
 static int
@@ -152,8 +152,8 @@ is_coap_message_in_list(uint16_t mid,uip_ipaddr_t *addr,uint16_t port,size_t uri
 }
 #endif
 
-static int
-coap_receive(void)
+int
+coap_receive()
 {
   erbium_status_code = NO_ERROR;
 
@@ -450,7 +450,7 @@ PROCESS_THREAD(coap_engine, ev, data)
     PROCESS_YIELD();
 
     if(ev == tcpip_event) {
-      coap_receive();
+      coap_handle_receive();
     } else if(ev == PROCESS_EVENT_TIMER) {
       /* retransmissions are handled here */
       coap_check_transactions();
