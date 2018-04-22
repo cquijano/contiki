@@ -166,3 +166,19 @@ coap_dtls_read_from_peer(struct dtls_context_t *ctx,
   coap_receive(ctx);
   return 0;
 }
+
+void
+coap_dtls_clean_peer(uip_ipaddr_t *addr, uint16_t port) {
+  session_t session;
+  dtls_peer_t *peer = NULL;
+
+  dtls_session_init(&session);
+  uip_ipaddr_copy(&session.addr, addr);
+  session.port = port;
+
+  peer = dtls_get_peer(dtls_ctx,&session);
+
+  if (peer) {
+    dtls_reset_peer(dtls_ctx,peer);
+  }
+}

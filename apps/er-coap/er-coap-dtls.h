@@ -43,6 +43,9 @@ int coap_dtls_get_psk_info(struct dtls_context_t *ctx,
                            const unsigned char *id, size_t id_len,
                            unsigned char *result, size_t result_length);
 #endif
+
+void coap_dtls_clean_peer(uip_ipaddr_t *addr,
+						   uint16_t port);
 #endif
 #endif /* COAP_DTLS_H_ */
 
