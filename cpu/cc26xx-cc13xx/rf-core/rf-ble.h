@@ -51,12 +51,19 @@
 #ifdef RF_BLE_CONF_ENABLED
 #define RF_BLE_ENABLED RF_BLE_CONF_ENABLED
 #else
-#define RF_BLE_ENABLED 1
+#define RF_BLE_ENABLED 0
 #endif
+
 #ifdef EDDYSTONE_CONF_ENABLED
 #define EDDYSTONE_ENABLED EDDYSTONE_CONF_ENABLED
 #else
 #define EDDYSTONE_ENABLED 0
+#endif
+
+#ifdef IBEACON_CONF_ENABLED
+#define IBEACON_ENABLED IBEACON_CONF_ENABLED
+#else
+#define IBEACON_ENABLED 0
 #endif
 /*---------------------------------------------------------------------------*/
 #define RF_BLE_IDLE   0
@@ -72,10 +79,12 @@
  * this function can be used to configure a single parameter at a time if so
  * desired.
  */
-#ifndef EDDYSTONE_ENABLED
-void rf_ble_beacond_config(clock_time_t interval, const char *name);
-#else
+#ifdef EDDYSTONE_ENABLED
 void rf_ble_beacond_config(clock_time_t interval, uint8_t *instance);
+#elif IBEACON_ENABLED
+void rf_ble_beacond_config(clock_time_t interval, uint16_t major, uint16_t minor);
+#else
+void rf_ble_beacond_config(clock_time_t interval, const char *name);
 #endif
 /**
  * \brief Start the BLE advertisement/beacon daemon

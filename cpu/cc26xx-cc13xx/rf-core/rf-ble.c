@@ -80,6 +80,9 @@
 /*Eddystone header,0x14=20 bytes length UID*/
 #define EDDYSTONE_ADV_HEAD          { 0x02, 0x01, 0x06, 0x03, 0x03, 0xAA, 0xFE, 0x17, 0x16, 0xAA, 0xFE }
 #define EDDYSTONE_ADV_HEAD_LEN      11
+/**iBeacons macros*/
+#define IBEACON_ADV_HEAD              {0x02,0x01,0x06,0x1A,0xFF,0x4C,0x00,0x02,0x15} /*iBeacon Header, 9 bytes*/
+#define IBEACON_ADV_HEAD_LEN          9
 /*---------------------------------------------------------------------------*/
 static unsigned char ble_params_buf[32] CC_ALIGN(4);
 static uint8_t ble_mode_on = RF_BLE_IDLE;
@@ -87,8 +90,10 @@ static struct etimer ble_adv_et;
 static uint8_t payload[BLE_ADV_PAYLOAD_BUF_LEN];
 static int p = 0;
 static int i;
-#ifdef EDDYSTONE_ENABLED
+#if EDDYSTONE_ENABLED
 static uint8_t uid[BLE_UID_SIZE] = EDDYSTONE_CONF_UUID;
+#elif IBEACON_ENABLED
+static uint8_t uuid[BLE_UUID_SIZE] = IBEACON_CONF_UUID;
 #endif
 /*---------------------------------------------------------------------------*/
 static uint16_t tx_power = 0x9330;
@@ -96,10 +101,13 @@ static uint16_t tx_power = 0x9330;
 /* BLE beacond config */
 static struct ble_beacond_config {
   clock_time_t interval;
-#ifndef EDDYSTONE_ENABLED
-  char adv_name[BLE_ADV_NAME_BUF_LEN];
-#else
+#if EDDYSTONE_ENABLED
   uint8_t instance[EDDYSTONE_INSTANCE_LEN];
+#elif IBEACON_ENABLED
+  uint16_t major;
+  uint16_t minor;
+#else
+  char adv_name[BLE_ADV_NAME_BUF_LEN];
 #endif
 } beacond_config = { .interval = BLE_ADV_INTERVAL };
 /*---------------------------------------------------------------------------*/
@@ -170,7 +178,7 @@ send_ble_adv_nc(int channel, uint8_t *adv_payload, int adv_payload_len)
   return RF_CORE_CMD_OK;
 }
 /*---------------------------------------------------------------------------*/
-#ifndef EDDYSTONE_ENABLED
+#if !(EDDYSTONE_ENABLED) && !(IBEACON_ENABLED)
 void
 rf_ble_beacond_config(clock_time_t interval, const char *name)
 {
@@ -191,8 +199,9 @@ rf_ble_beacond_config(clock_time_t interval, const char *name)
     beacond_config.interval = interval;
   }
 }
-#else
+#endif
 /*---------------------------------------------------------------------------*/
+#if EDDYSTONE_ENABLED 
 void
 rf_ble_beacond_config(clock_time_t interval, uint8_t *instance)
 {
@@ -201,6 +210,22 @@ rf_ble_beacond_config(clock_time_t interval, uint8_t *instance)
   }
 
   memcpy(beacond_config.instance, instance, EDDYSTONE_INSTANCE_LEN);
+
+  if(interval != 0) {
+    beacond_config.interval = interval;
+  }
+}
+#endif
+#if IBEACON_ENABLED
+void
+rf_ble_beacond_config(clock_time_t interval, uint16_t major, uint16_t minor)
+{
+  if(RF_BLE_ENABLED == 0) {
+    return;
+  }
+
+  beacond_config.major=major;
+  beacond_config.minor=minor;
 
   if(interval != 0) {
     beacond_config.interval = interval;
@@ -219,7 +244,7 @@ rf_ble_beacond_start()
     return RF_CORE_CMD_ERROR;
   }
 
-#ifndef EDDYSTONE_ENABLED
+#if !EDDYSTONE_ENABLED && !IBEACON_ENABLED
   if(beacond_config.adv_name[0] == 0) {
     return RF_CORE_CMD_ERROR;
   }
@@ -284,7 +309,13 @@ PROCESS_THREAD(rf_ble_beacon_process, ev, data)
   int j;
   uint32_t cmd_status;
   bool interrupts_disabled;
+#if EDDYSTONE_ENABLED
+  PRINTF("EDDYSTONE ENABLED\n");
   uint8_t eddystone_head[EDDYSTONE_ADV_HEAD_LEN]= EDDYSTONE_ADV_HEAD;
+#elif IBEACON_ENABLED
+  PRINTF("iBeacon ENABLED\n");
+  uint8_t ibeacon_head[IBEACON_ADV_HEAD_LEN]= IBEACON_ADV_HEAD;
+#endif
   int tx_power;
   PROCESS_BEGIN();
 
@@ -301,7 +332,7 @@ PROCESS_THREAD(rf_ble_beacon_process, ev, data)
 
     /* device info */
     memset(payload, 0, BLE_ADV_PAYLOAD_BUF_LEN);
-#ifndef EDDYSTONE_ENABLED
+#if IBEACON_ENABLED
     payload[p++] = 0x02;          /* 2 bytes */
     payload[p++] = BLE_ADV_TYPE_DEVINFO;
     payload[p++] = 0x1a;          /* LE general discoverable + BR/EDR */
@@ -310,12 +341,13 @@ PROCESS_THREAD(rf_ble_beacon_process, ev, data)
     memcpy(&payload[p], beacond_config.adv_name,
            strlen(beacond_config.adv_name));
     p += strlen(beacond_config.adv_name);
-#else
+#elif EDDYSTONE_ENABLED
     for(i = 0; i < EDDYSTONE_ADV_HEAD_LEN; i++) {
         payload[p++] = ( eddystone_head[i] );
     }
     /*Eddystone UID frame */
     payload[p++] = EDDYSTONE_FRAME_TYPE;
+#endif
 #ifndef TXPOWER_DBM_CONF
     NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &tx_power);
 #else
@@ -329,8 +361,20 @@ PROCESS_THREAD(rf_ble_beacon_process, ev, data)
     p += EDDYSTONE_INSTANCE_LEN;
     payload[p++] = 0;
     payload[p++] = 0;
-    PRINTF("rf_ble_beacon_process: power tx %i\n",tx_power);
+#if IBEACON_ENABLED
+    for(i = 0; i < IBEACON_ADV_HEAD_LEN; i++) {
+        payload[p++] = ( ibeacon_head[i] );
+    }
+    for(i = 0; i < BLE_UUID_SIZE ; i++) {
+        payload[p++] = uuid[i];
+    }
+    payload[p++] = beacond_config.major;
+    payload[p++] = (beacond_config.major << 8);
+    payload[p++] = beacond_config.minor;
+    payload[p++] = (beacond_config.minor << 8);
+    payload[p++] = tx_power;
 #endif
+    PRINTF("rf_ble_beacon_process: power tx %i\n",tx_power);
     for(i = 0; i < BLE_ADV_MESSAGES; i++) {
       /*
        * Under ContikiMAC, some IEEE-related operations will be called from an
