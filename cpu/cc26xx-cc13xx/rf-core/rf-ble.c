@@ -106,6 +106,7 @@ static struct ble_beacond_config {
 #elif IBEACON_ENABLED
   uint16_t major;
   uint16_t minor;
+  char adv_name[BLE_ADV_NAME_BUF_LEN];
 #else
   char adv_name[BLE_ADV_NAME_BUF_LEN];
 #endif
@@ -332,6 +333,12 @@ PROCESS_THREAD(rf_ble_beacon_process, ev, data)
 
     /* device info */
     memset(payload, 0, BLE_ADV_PAYLOAD_BUF_LEN);
+#ifndef TXPOWER_DBM_CONF
+    NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &tx_power);
+#else
+    tx_power=TXPOWER_DBM_CONF;
+#endif
+
 #if IBEACON_ENABLED
     payload[p++] = 0x02;          /* 2 bytes */
     payload[p++] = BLE_ADV_TYPE_DEVINFO;
@@ -341,27 +348,6 @@ PROCESS_THREAD(rf_ble_beacon_process, ev, data)
     memcpy(&payload[p], beacond_config.adv_name,
            strlen(beacond_config.adv_name));
     p += strlen(beacond_config.adv_name);
-#elif EDDYSTONE_ENABLED
-    for(i = 0; i < EDDYSTONE_ADV_HEAD_LEN; i++) {
-        payload[p++] = ( eddystone_head[i] );
-    }
-    /*Eddystone UID frame */
-    payload[p++] = EDDYSTONE_FRAME_TYPE;
-#endif
-#ifndef TXPOWER_DBM_CONF
-    NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &tx_power);
-#else
-    tx_power=TXPOWER_DBM_CONF;
-#endif
-    payload[p++] = tx_power;
-    for(i = 0; i < BLE_UID_SIZE ; i++) {
-        payload[p++] = uid[i];
-    }
-    memcpy(&payload[p],beacond_config.instance,EDDYSTONE_INSTANCE_LEN);
-    p += EDDYSTONE_INSTANCE_LEN;
-    payload[p++] = 0;
-    payload[p++] = 0;
-#if IBEACON_ENABLED
     for(i = 0; i < IBEACON_ADV_HEAD_LEN; i++) {
         payload[p++] = ( ibeacon_head[i] );
     }
@@ -373,7 +359,22 @@ PROCESS_THREAD(rf_ble_beacon_process, ev, data)
     payload[p++] = beacond_config.minor;
     payload[p++] = (beacond_config.minor << 8);
     payload[p++] = tx_power;
+#elif EDDYSTONE_ENABLED
+    for(i = 0; i < EDDYSTONE_ADV_HEAD_LEN; i++) {
+        payload[p++] = ( eddystone_head[i] );
+    }
+    /*Eddystone UID frame */
+    payload[p++] = EDDYSTONE_FRAME_TYPE;
+    payload[p++] = tx_power;
+    for(i = 0; i < BLE_UID_SIZE ; i++) {
+        payload[p++] = uid[i];
+    }
+    memcpy(&payload[p],beacond_config.instance,EDDYSTONE_INSTANCE_LEN);
+    p += EDDYSTONE_INSTANCE_LEN;
+    payload[p++] = 0;
+    payload[p++] = 0;
 #endif
+
     PRINTF("rf_ble_beacon_process: power tx %i\n",tx_power);
     for(i = 0; i < BLE_ADV_MESSAGES; i++) {
       /*

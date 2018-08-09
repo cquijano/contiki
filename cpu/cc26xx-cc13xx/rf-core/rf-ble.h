@@ -79,7 +79,7 @@
  * this function can be used to configure a single parameter at a time if so
  * desired.
  */
-#ifdef EDDYSTONE_ENABLED
+#if EDDYSTONE_ENABLED
 void rf_ble_beacond_config(clock_time_t interval, uint8_t *instance);
 #elif IBEACON_ENABLED
 void rf_ble_beacond_config(clock_time_t interval, uint16_t major, uint16_t minor);
