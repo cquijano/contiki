@@ -311,10 +311,8 @@ PROCESS_THREAD(rf_ble_beacon_process, ev, data)
   uint32_t cmd_status;
   bool interrupts_disabled;
 #if EDDYSTONE_ENABLED
-  PRINTF("EDDYSTONE ENABLED\n");
   uint8_t eddystone_head[EDDYSTONE_ADV_HEAD_LEN]= EDDYSTONE_ADV_HEAD;
 #elif IBEACON_ENABLED
-  PRINTF("iBeacon ENABLED\n");
   uint8_t ibeacon_head[IBEACON_ADV_HEAD_LEN]= IBEACON_ADV_HEAD;
 #endif
   int tx_power;
@@ -340,20 +338,14 @@ PROCESS_THREAD(rf_ble_beacon_process, ev, data)
 #endif
 
 #if IBEACON_ENABLED
-    payload[p++] = 0x02;          /* 2 bytes */
-    payload[p++] = BLE_ADV_TYPE_DEVINFO;
-    payload[p++] = 0x1a;          /* LE general discoverable + BR/EDR */
-    payload[p++] = 1 + strlen(beacond_config.adv_name);
-    payload[p++] = BLE_ADV_TYPE_NAME;
-    memcpy(&payload[p], beacond_config.adv_name,
-           strlen(beacond_config.adv_name));
-    p += strlen(beacond_config.adv_name);
+    
     for(i = 0; i < IBEACON_ADV_HEAD_LEN; i++) {
         payload[p++] = ( ibeacon_head[i] );
     }
     for(i = 0; i < BLE_UUID_SIZE ; i++) {
         payload[p++] = uuid[i];
     }
+    
     payload[p++] = beacond_config.major;
     payload[p++] = (beacond_config.major << 8);
     payload[p++] = beacond_config.minor;
