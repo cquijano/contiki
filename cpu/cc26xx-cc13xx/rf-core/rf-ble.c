@@ -346,10 +346,10 @@ PROCESS_THREAD(rf_ble_beacon_process, ev, data)
         payload[p++] = uuid[i];
     }
     
-    payload[p++] = (beacond_config.major << 8);
-    payload[p++] = beacond_config.major;
-    payload[p++] = (beacond_config.minor << 8);
-    payload[p++] = beacond_config.minor;
+    payload[p++] = (beacond_config.major >> 8);
+    payload[p++] = beacond_config.major & 0xFF;
+    payload[p++] = (beacond_config.minor >> 8);
+    payload[p++] = beacond_config.minor & 0xFF;
     payload[p++] = tx_power;
 #elif EDDYSTONE_ENABLED
     for(i = 0; i < EDDYSTONE_ADV_HEAD_LEN; i++) {
