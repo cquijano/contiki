@@ -502,7 +502,7 @@ deep_sleep(void)
    * source while in deep sleep.
    */
   if(domains == LOCKABLE_DOMAINS) {
-    ti_lib_pwr_ctrl_source_set(PWRCTRL_PWRSRC_ULDO);
+    ti_lib_pwr_ctrl_source_set(PWRCTRL_PWRSRC_DCDC);
   }
 
   /* We are only interested in IRQ energest while idle or in LPM */
