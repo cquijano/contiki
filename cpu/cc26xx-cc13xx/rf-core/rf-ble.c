@@ -312,10 +312,11 @@ PROCESS_THREAD(rf_ble_beacon_process, ev, data)
   bool interrupts_disabled;
 #if EDDYSTONE_ENABLED
   uint8_t eddystone_head[EDDYSTONE_ADV_HEAD_LEN]= EDDYSTONE_ADV_HEAD;
+  int tx_power;
 #elif IBEACON_ENABLED
   uint8_t ibeacon_head[IBEACON_ADV_HEAD_LEN]= IBEACON_ADV_HEAD;
-#endif
   int tx_power;
+#endif
   PROCESS_BEGIN();
 
   while(1) {
